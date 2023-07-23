@@ -96,20 +96,35 @@ app.post("/admin-forget-password", (req, res) => {
     const sqlUpdate = "UPDATE admin SET Admin_Password = ? WHERE Admin_Username = ?";
 
     db.query(sqlSelect, [req.body.Admin_Username], (err, result) => {
-        if (err) return res.json({ Error: err });
+        if (err) {
+            return res.json({ Error: err });
+        }
+
         if (result.length > 0) {
+            const username = result[0].Admin_Username;
+            if (req.body.Admin_Password.length < 8) {
+                return res.json({ Error: "Password must be at least 8 characters" });
+            }
+
             bcrypt.hash(req.body.Admin_Password, salt, (error, hash) => {
-                if (error) return res.json({ Error: error });
-                db.query(sqlUpdate, [hash, req.body.Admin_Username], (error, result) => {
-                    if (error) return res.json({ Error: error });
+                if (error) {
+                    return res.json({ Error: error });
+                }
+
+                db.query(sqlUpdate, [hash, username], (error, result) => {
+                    if (error) {
+                        return res.json({ Error: error });
+                    }
+
                     res.send(result);
                 });
             });
         } else {
-            res.json({ Error: "Wrong username" });
+            res.json({ Error: "Username does not exist" });
         }
     });
 });
+
 
 app.get("/admin-logout", (req, res) => {
     res.clearCookie("token").send();
